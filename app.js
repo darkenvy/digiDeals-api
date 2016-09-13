@@ -2,10 +2,11 @@ var express = require('express');
 var FeedParser = require('feedparser');
 var htmlparser = require("htmlparser2");
 var request = require('request');
+var req = request('https://isthereanydeal.com/rss/deals/us/');
+var feedparser = new FeedParser({addmeta: false});
 var reg = new RegExp(/isthereanydeal/)
 var app = express();
 var gamelist = []
-
 var parser = new htmlparser.Parser({
   onopentag: function(name, attribs){
     if (attribs.href && reg.test(attribs.href)) {
@@ -38,40 +39,26 @@ var parser = new htmlparser.Parser({
   onclosetag: function(tagname){}
 }, {decodeEntities: true});
 
-
-
-
-
-
-
-
-var req = request('https://isthereanydeal.com/rss/deals/us/'),
-    feedparser = new FeedParser({addmeta: false});
-
-
+// -------- Initialize gamelist on start of node -------- //
 req.on('error', function (error) {console.log(error);});
 req.on('response', function (res) {
   var stream = this;
   if (res.statusCode != 200) return this.emit('error', new Error('Bad status code'));
   stream.pipe(feedparser);
 });
-
-
-
-
-feedparser.on('error', function(error) {
-  console.log(error);
-});
-
+feedparser.on('error', function(error) {console.log(error);});
 feedparser.on('readable', function() {
-  var stream = this,
-      meta = this.meta, // **NOTE** the "meta" is always available in the context of the feedparser instance
-      item;
+  // **NOTE** the "meta" is always available in the context of the feedparser instance
+  var stream = this, meta = this.meta, item;
   while (item = stream.read()) {
     parser.write(JSON.stringify(item.description));
     parser.end();
   }
-});
 
+
+
+
+
+});
 
 var server = app.listen(3000) // port 8080
