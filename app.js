@@ -2,11 +2,14 @@ var express = require('express');
 var FeedParser = require('feedparser');
 var htmlparser = require("htmlparser2");
 var request = require('request');
+// var cors = require('cors')
 var req = request('https://isthereanydeal.com/rss/deals/us/');
 var feedparser = new FeedParser({addmeta: false});
 var reg = new RegExp(/isthereanydeal/)
+var priceReg = new RegExp(/\d+\.\d+/)
 var app = express();
 var gamelist = []
+// app.use(cors())
 var parser = new htmlparser.Parser({
   onopentag: function(name, attribs){
     if (attribs.href && reg.test(attribs.href)) {
@@ -23,7 +26,7 @@ var parser = new htmlparser.Parser({
   ontext: function(text){
     if (/\$/.test(text)) {
       if (gamelist[gamelist.length-1].price === null) {
-        gamelist[gamelist.length-1].price = parseInt(text); // Add price
+        gamelist[gamelist.length-1].price = priceReg.exec(text)[0]; // Add price
         console.log(text);
       }
     } else if (/\%/.test(text)) {
@@ -54,11 +57,40 @@ feedparser.on('readable', function() {
     parser.write(JSON.stringify(item.description));
     parser.end();
   }
-
-
-
-
-
 });
+
+// ------------------- CORS Middleware ------------------ //
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
+// app.all('/*', function(req, res, next) {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header("Access-Control-Allow-Headers", "X-Requested-With");
+//   next();
+// });
+// var allowCrossDomain = function(req, res, next) {
+//     res.header('Access-Control-Allow-Origin', 'example.com');
+//     res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+//     res.header('Access-Control-Allow-Headers', 'Content-Type');
+//     next();
+// }
+
+// app.configure(function() {
+    // app.use(allowCrossDomain);
+    // app.use(express.methodOverride());
+    // app.use(app.router);
+    // app.use(express.static(__dirname + '/public'));
+// });
+
+// ----------------------- Routes ----------------------- //
+app.get('/', function(req, res, next) {
+  res.send(JSON.stringify(gamelist))
+})
+
+
+
+
 
 var server = app.listen(3000) // port 8080
