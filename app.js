@@ -9,35 +9,38 @@ var gamelist = []
 var parser = new htmlparser.Parser({
   onopentag: function(name, attribs){
     if (attribs.href && reg.test(attribs.href)) {
+      // New title discovered, create a new item
+      // Each information piece will add to the last element in the array
       console.log("=========================================");
-      gamelist.push({name: '', price: -1, savings: 0, link: ''}); // add a new item
+      gamelist.push({name: '', price: null, savings: null, link: ''}); // Add a new item
       console.log("attribs: ", attribs.href)
-    // } else if (attribs.href) {
     } else if (attribs.href && gamelist[gamelist.length-1].link.length < 1) {
-      gamelist[gamelist.length-1].link = attribs.href;
+      gamelist[gamelist.length-1].link = attribs.href; // Add Link
       console.log("attribs: ", attribs.href);
     }
   },
   ontext: function(text){
-    if (/\d/.test(text)) {
-      if (gamelist[gamelist.length-1].price === -1) {
-        gamelist[gamelist.length-1].price = text;
+    if (/\$/.test(text)) {
+      if (gamelist[gamelist.length-1].price === null) {
+        gamelist[gamelist.length-1].price = parseInt(text); // Add price
         console.log(text);
       }
+    } else if (/\%/.test(text)) {
+      if (gamelist[gamelist.length-1].savings === null) {
+        gamelist[gamelist.length-1].savings = parseInt(text); // Add Savings %
+        console.log(text); 
+      }
     } else if (gamelist[gamelist.length-1] && gamelist[gamelist.length-1].name.length < 1) {
-      gamelist[gamelist.length-1].name = text;
-      console.log(text);
-      // console.log("THIS: ", gamelist[gamelist.length-1].name, " THEN ", text);
+      gamelist[gamelist.length-1].name = text; // Add name of game
+      console.log(text); 
     }
   },
-  onclosetag: function(tagname){
-    // console.log("tagname: ", tagname);
-  }
+  onclosetag: function(tagname){}
 }, {decodeEntities: true});
 
 
-// parser.write("Xyz <script type='text/javascript'>var foo = '<<bar>>';</ script>");
-// parser.end();
+
+
 
 
 
@@ -65,15 +68,8 @@ feedparser.on('readable', function() {
       meta = this.meta, // **NOTE** the "meta" is always available in the context of the feedparser instance
       item;
   while (item = stream.read()) {
-    // console.log(JSON.stringify(item.description));
-    // console.log('------');
-    // for (key in item) {
-    //   // console.log(item[key]);
-    //   // if (item[key] && item[key].length > 5) parser.write(item);
-    //   if (item[key] && item[key].length > 5) console.log(typeof item);
-    // }
-    // console.log(item);
     parser.write(JSON.stringify(item.description));
+    parser.end();
   }
 });
 
